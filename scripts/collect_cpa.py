@@ -9,6 +9,9 @@ import time
 # left: 
 left_init={'left_w0': -2.027922601584517, 'left_w1': 2.0612866837210246, 'left_w2': 1.2678351211872945, 'left_e0': 0.47284957786567877, 'left_e1': 0.6661311571392409, 'left_s0': -0.17755827619773665, 'left_s1': -0.8318010822308656}
 right_init= {'right_s0': 0.8782040010643993, 'right_s1': 0.14150972768242942, 'right_w0': 2.058985712539197, 'right_w1': -1.5707963267946636, 'right_w2': 0.03604854851530722, 'right_e0': -2.138369218312267, 'right_e1': 0.014189322287940077}
+
+DATA_FOLDER='/home/teach/sys_id/cpa_data/'
+
 # enable robot
 
 # enable camera
@@ -49,7 +52,7 @@ class BaxterData:
         self.pt=pt
         self.GOT_POSE=True
         
-    def collect_cpa(self,delta,n_pts,j_idx='right_w1'):
+    def collect_cpa(self,delta,n_pts,time_stream=2,j_idx='right_w1'):
         # we move the right arm
         j0=copy.deepcopy(right_init)
         j_next=copy.deepcopy(j0)
@@ -60,30 +63,47 @@ class BaxterData:
             # move robot to next pose:
             for i in range(3):
                 self.right.move_to_joint_positions(j_next)
-            # collect data
-            print n
-            # wait for 0.5 second
-            time.sleep(1.0)
-            #raw_input('collect pt?')
+
+            # wait until robot stops
+            raw_input("robot static?")
+            print 'Collecting data point: ',n
+            
+            # collect data for time_stream seconds
             self.GOT_POSE=False
+            dpts=[]
             while(not self.GOT_POSE):
+                # waiting for new checkerboard data:
                 t=1
                 #print 'waiting'
-            pt=copy.deepcopy(self.pt)
-            pt_arr.append(pt)
+            now = rospy.get_rostime()
+            timer=rospy.get_rostime()-now
+            
+            while(timer<time_stream):
+                pt=copy.deepcopy(self.pt)
+                dpts.append(pt)
+                timer=rospy.get_rostime()-now    
+            # save to csv file:
+            self.write_xls(dpts,'P'+str(n))
         return pt_arr
+    
+    def write_xls(self,dpts,f_name):
+        book = xlwt.Workbook(encoding="utf-8")
+
+        sheet1 = book.add_sheet("Sheet 1")
+        for i in range(len(dpts)):
+            sheet1.write(i, 0, dpts[i][0])# row,column,data
+            sheet1.write(i, 1, dpts[i][1])# row,column,data
+            sheet1.write(i, 2, dpts[i][2])# row,column,data
+        book.save(DATA_FOLDER+f_name+'.xls')
+
+
 if __name__=='__main__':
     bax=BaxterData()
-    '''
-    raw_input('Move left arm?')
-    for i in range(3):
-        bax.left.move_to_joint_positions(left_init)
-    '''
     raw_input('Move right arm?')
     for i in range(3):
         bax.right.move_to_joint_positions(right_init)
 
     raw_input('collect data?')
     
-    data=bax.collect_cpa(0.05,35)
+    data=bax.collect_cpa(0.05,20)
     pickle.dump(data,open('cpa_pts_50.p','wb'))
