@@ -1,7 +1,7 @@
 <launch>
  <group ns="checkerdetector" clear_params="true">
     <!-- display 0: (default) not display / 1: display found corner -->
-    <param name="display" type="int" value="0"/>
+    <param name="display" type="int" value="1"/>
     <!-- maxboard -1: (default) infinite search board / 1<=: limit found number of boards -->
     <param name="maxboard" type="int" value="1"/>
     <!-- set frame_id if you want to use specific frame_id -->
