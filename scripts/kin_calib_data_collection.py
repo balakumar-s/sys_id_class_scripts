@@ -34,7 +34,7 @@ class BaxterData:
         #self.GOT_POSE=False
     def get_js(self,arm='left',dict_=False):
         if(arm=='left'):
-            js=self.left.joint_angles
+            js=self.left.joint_angles()
         if(dict_==False):
             js=js.values()
         return js
@@ -44,20 +44,24 @@ class BaxterData:
         while(not get_tf):
             # listen to tf
             try:
-                (trans,rot) = listener.lookupTransform(e_frame, b_frame, rospy.Time(0))
-                get_tf=True
+                (trans,rot) = self.listener.lookupTransform(b_frame, e_frame, rospy.Time(0))
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
+            get_tf=True
 
         # build T mat:
         T=np.eye(4)
-        
+        R=tf.transformations.quaternion_matrix(rot)
+        T=np.eye(4)
+        T=R
+        T[0:3,3]=trans
+    
         return T
 
     def store_poses(self,N=25):
         # move robot to home:
-        for i in range(3):
-            self.left.move_to_joint_positions(left_init)
+        #for i in range(3):
+        #    self.left.move_to_joint_positions(left_init)
 
         # move arm manually:
         n=0
@@ -65,11 +69,12 @@ class BaxterData:
         f_writer = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
         while(n<N):
             raw_input('Press Enter after moving arm.')
-            js=self.get_js
+            js=self.get_js()
+            print js
             pose=self.get_ee_pose()
             dat=np.concatenate((np.ravel(js),np.ravel(pose)),axis=0)
             f_writer.writerow(dat.tolist())
-            
+            n=n+1
     def store_auto_poses(self,N=25):
         # move robot to home:
         for i in range(3):

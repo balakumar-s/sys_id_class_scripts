@@ -8,7 +8,7 @@ import time
 import xlwt
 # Robot initial positions:
 # left: 
-left_init={'left_w0': -2.027922601584517, 'left_w1': 2.0612866837210246, 'left_w2': 1.2678351211872945, 'left_e0': 0.47284957786567877, 'left_e1': 0.6661311571392409, 'left_s0': -0.17755827619773665, 'left_s1': -0.8318010822308656}
+left_init={'left_w0': 0.0, 'left_w1': 0.0, 'left_w2': 0.0, 'left_e0': 0.0, 'left_e1': 0.0, 'left_s0': 0.0, 'left_s1': 0.0}
 right_init= {'right_s0': 0.8782040010643993, 'right_s1': 0.14150972768242942, 'right_w0': 2.058985712539197, 'right_w1': -1.5707963267946636, 'right_w2': 0.03604854851530722, 'right_e0': -2.138369218312267, 'right_e1': 0.014189322287940077}
 
 DATA_FOLDER='/home/teach/sys_id/cpa_data/'
@@ -109,8 +109,8 @@ if __name__=='__main__':
     bax=BaxterData()
     raw_input('Move right arm?')
     for i in range(3):
-        bax.right.move_to_joint_positions(right_init)
-
+        #bax.right.move_to_joint_positions(right_init)
+        bax.left.move_to_joint_positions(left_init)
     raw_input('collect data?')
     
     data=bax.collect_cpa(0.08,20)
