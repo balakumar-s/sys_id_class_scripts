@@ -2,22 +2,34 @@ import rospy
 import csv
 import sys
 import numpy as np
+import baxter_interface
+import baxter_kinematics
+'''
 from rospkg import RosPack
 rp=RosPack()
 rp.list()
 path=rp.get_path('ll4ma_kdl')+'/scripts'
 sys.path.insert(0,path)
-urdf_path=rp.get_path('urlg_robots_description')
-
+#urdf_path=rp.get_path('urlg_robots_description')
+'''
 from manipulator_model import *
 
 if __name__=='__main__':
     # load robot kdl:
     #urdf_file=urdf_path+'/urdf/lbr4/lbr4_kdl.urdf'
-    urdf_file='baxter.urdf'
-    robot=ManipulatorSimpleModel(urdf_file,"right_arm_mount","right_wrist")
+    urdf_file='baxter_1.urdf'
+    robot=ManipulatorSimpleModel(urdf_file,"left_arm_mount","left_wrist")
 
-    print robot.FK(np.array([0.0,0.0,0.0,0.0,0.0,0.0,0.0]))[0:3 ,3]
+    rospy.init_node('g')
+    b_kin=baxter_kinematics.baxter_kinematics()
+    bax=baxter_interface.Limb('left')
+    print bax.joint_angles()
+    js=bax.joint_angles().values()
+    #print js
+    print "T"
+    print robot.FK(js)
+    print b_kin.forward_position_kinematics()
+    #print bax.endpoint_pose()
     exit()
     #
     N=500

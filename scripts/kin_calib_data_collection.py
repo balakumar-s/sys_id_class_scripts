@@ -30,14 +30,17 @@ class BaxterData:
         self.left=baxter_interface.Limb('left')
         self.right=baxter_interface.Limb('right')
         self.listener = tf.TransformListener()
+        self._joint_names = self.left.joint_names()
 
         #self.GOT_POSE=False
     def get_js(self,arm='left',dict_=False):
         if(arm=='left'):
             js=self.left.joint_angles()
-        if(dict_==False):
-            js=js.values()
-        return js
+            kdl_array=np.zeros(7)
+            current_angles = self.left.joint_angles()
+            for i, name in enumerate(self._joint_names):
+                kdl_array[i] = current_angles[name]
+        return kdl_array
 
     def get_ee_pose(self,b_frame='left_arm_mount',e_frame='marker'):
         get_tf=False
@@ -58,6 +61,27 @@ class BaxterData:
     
         return T
 
+    def get_tf_pos(self,b_frame='left_arm_mount',e_frame='marker'):
+        get_tf=False
+        while(not get_tf):
+            # listen to tf
+            try:
+                (trans,rot) = self.listener.lookupTransform(b_frame, e_frame, rospy.Time(0))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                continue
+            get_tf=True
+
+        position=np.zeros(3)
+        position=trans
+        return position
+    
+    def get_3_poses(self):
+        p_arr=np.zeros(3*3)
+        p_arr[0:3]=self.get_tf_pos(b_frame='left_arm_mount',e_frame='ar_object1')
+        p_arr[3:6]=self.get_tf_pos(b_frame='left_arm_mount',e_frame='ar_object2')
+        p_arr[6:9]=self.get_tf_pos(b_frame='left_arm_mount',e_frame='ar_object3')
+        return p_arr
+
     def store_poses(self,N=25):
         # move robot to home:
         #for i in range(3):
@@ -75,6 +99,26 @@ class BaxterData:
             dat=np.concatenate((np.ravel(js),np.ravel(pose)),axis=0)
             f_writer.writerow(dat.tolist())
             n=n+1
+
+    def store_full_fit_poses(self,N=25):
+        # move robot to home:
+        #for i in range(3):
+        #    self.left.move_to_joint_positions(left_init)
+
+        # move arm manually:
+        n=0
+        csvfile=open(DATA_FOLDER+'baxter_full_poses.csv', 'wb')
+        f_writer = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        while(n<N):
+            raw_input('Press Enter after moving arm.')
+            js=self.get_js()
+
+            pose=self.get_3_poses()
+            dat=np.concatenate((np.ravel(js),np.ravel(pose)),axis=0)
+            print dat
+            f_writer.writerow(dat.tolist())
+            n=n+1
+
     def store_auto_poses(self,N=25):
         # move robot to home:
         for i in range(3):
@@ -107,7 +151,7 @@ if __name__=='__main__':
     baxt=BaxterData()
 
     # move manually and store poses:
-    baxt.store_poses()
-
+    #baxt.store_poses()
+    baxt.store_full_fit_poses()
     # move from txt and store poses:
     #baxt.store_auto_poses()

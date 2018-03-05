@@ -30,14 +30,17 @@ class BaxterData:
         self.left=baxter_interface.Limb('left')
         self.right=baxter_interface.Limb('right')
         self.listener = tf.TransformListener()
+        self._joint_names = self.left.joint_names()
 
         #self.GOT_POSE=False
     def get_js(self,arm='left',dict_=False):
         if(arm=='left'):
             js=self.left.joint_angles()
-        if(dict_==False):
-            js=js.values()
-        return js
+            kdl_array=np.zeros(7)
+            current_angles = self.left.joint_angles()
+            for i, name in enumerate(self._joint_names):
+                kdl_array[i] = current_angles[name]
+        return kdl_array
 
     def get_ee_pose(self,b_frame='left_arm_mount',e_frame='left_wrist'):
         get_tf=False
@@ -45,11 +48,12 @@ class BaxterData:
             # listen to tf
             try:
                 (trans,rot) = self.listener.lookupTransform(b_frame, e_frame, rospy.Time(0))
-                get_tf=True
+                
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
-
+            get_tf=True
         # build T mat:
+        print rot
         T=np.eye(4)
         R=tf.transformations.quaternion_matrix(rot)
         T=np.eye(4)
@@ -63,10 +67,12 @@ class BaxterData:
         # move robot to home:
         for i in range(3):
             self.left.move_to_joint_positions(left_init)
-
+        pose=self.get_ee_pose()
+        print pose
+        #print np.linalg.inv(pose)
         # move arm manually:
         n=0
-        csvfile=open(DATA_FOLDER+'baxter_poses.csv', 'wb')
+        csvfile=open(DATA_FOLDER+'baxter_fk_poses.csv', 'wb')
         f_writer = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
         while(n<N):
             raw_input('Press Enter after moving arm.')
